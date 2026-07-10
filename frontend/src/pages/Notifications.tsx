@@ -1,0 +1,140 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { notificationService } from '../services/notificationService';
+import { Pagination } from '../components/ui/Pagination';
+
+const typeIcons: Record<string, JSX.Element> = {
+  low_stock: (
+    <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+    </svg>
+  ),
+  expiry: (
+    <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0Zm-9 3.75h.008v.008H12v-.008Z" />
+    </svg>
+  ),
+  out_of_stock: (
+    <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+    </svg>
+  ),
+};
+
+const defaultIcon = (
+  <svg className="w-5 h-5 text-[#1a5c7a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+  </svg>
+);
+
+export function Notifications() {
+  const navigate = useNavigate();
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  const fetch = () => {
+    setLoading(true);
+    notificationService.list({ page, limit: 15 }).then((res) => {
+      setNotifications(res.data.data || []);
+      setTotalPages(res.data.total_pages || 1);
+      setTotal(res.data.total || 0);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { fetch(); }, [page]);
+
+  const handleMarkRead = async (id: number) => {
+    await notificationService.markRead(id);
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+    window.dispatchEvent(new Event('notif-read'));
+  };
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          {total > 0 ? `${total} notification${total !== 1 ? 's' : ''}` : 'No notifications'}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <svg className="animate-spin h-8 w-8 text-[#1a5c7a]" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+            <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+            </svg>
+            <p>No notifications</p>
+          </div>
+        ) : (
+          notifications.map((notif) => {
+            const isExpanded = expandedId === notif.id;
+            return (
+              <div
+                key={notif.id}
+                className={`flex items-start gap-4 p-4 rounded-xl border transition-colors cursor-pointer ${
+                  notif.is_read
+                    ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                    : 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800'
+                }`}
+                onClick={async () => {
+                  if (!notif.is_read) await handleMarkRead(notif.id);
+                  if (notif.reference_type === 'medicine' && notif.reference_id) {
+                    navigate(`/medicines/${notif.reference_id}`);
+                  } else {
+                    setExpandedId(isExpanded ? null : notif.id);
+                  }
+                }}
+              >
+                <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                  {typeIcons[notif.type] || defaultIcon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`text-sm ${notif.is_read ? 'text-gray-900 dark:text-white' : 'text-gray-900 dark:text-white font-semibold'}`}>
+                      {notif.title}
+                    </p>
+                    {!notif.is_read && (
+                      <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
+                    )}
+                  </div>
+                  <p className={`text-sm text-gray-500 dark:text-gray-400 mt-0.5 ${isExpanded ? '' : 'line-clamp-2'}`}>{notif.message}</p>
+                  {notif.reference_type && (
+                    <span className="inline-block mt-1.5 text-xs font-medium text-[#1a5c7a] bg-[#1a5c7a]/5 px-2 py-0.5 rounded-full capitalize">
+                      {notif.reference_type.replace(/_/g, ' ')}
+                    </span>
+                  )}
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
+                    {notif.created_at ? new Date(notif.created_at).toLocaleString() : ''}
+                  </p>
+                </div>
+                {!notif.is_read && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleMarkRead(notif.id); }}
+                    className="text-xs text-[#1a5c7a] hover:underline shrink-0 mt-1"
+                  >
+                    Mark read
+                  </button>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+    </div>
+  );
+}
