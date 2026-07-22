@@ -34,7 +34,12 @@ export function Login() {
     <div className="min-h-screen flex">
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628] via-[#0f2b4a] to-[#1a5c7a]" />
+        {/* Full background image */}
+        <img
+          src="/login-left-panel.png"
+          alt="Login background"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-8 -left-8 w-[450px] h-[120px] rounded-full bg-white/[0.06] rotate-[25deg]" />
           <div className="absolute top-[18%] right-[-10%] w-[350px] h-[100px] rounded-full bg-white/[0.06] -rotate-[15deg]" />
@@ -45,14 +50,6 @@ export function Login() {
         </div>
 
         <div className="relative z-10 text-center px-10">
-          {/* Large medical cross icon */}
-          <div className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-white/10 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/20 shadow-2xl shadow-black/20">
-            <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-3-3v6" />
-            </svg>
-          </div>
-
           <h2 className="text-3xl font-bold text-white mb-3 tracking-tight">{t.login.medCare}</h2>
           <p className="text-white/60 text-base max-w-sm mx-auto leading-relaxed">
             {t.login.tagline}
