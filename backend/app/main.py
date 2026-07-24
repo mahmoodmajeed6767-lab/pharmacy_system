@@ -1,6 +1,7 @@
-from fastapi import FastAPI, RedirectResponse
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.database import engine, Base
@@ -13,7 +14,13 @@ app = FastAPI(title=settings.APP_NAME, version="1.0.0")
 
 @app.get("/")
 def root():
-    return RedirectResponse(url="http://localhost:5173")
+    return {
+        "status": "success",
+        "message": "Pharmacy Management System API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/api/health"
+    }
 
 
 @app.get("/api")
@@ -25,17 +32,21 @@ def api_root():
 def health():
     return {"status": "success", "message": "API is running"}
 
-# CORS
+
+# CORS - allow any origin in production (Railway)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Static files for uploads
-app.mount("/static", StaticFiles(directory="static"), name="static")
+try:
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+except Exception as e:
+    print(f"Warning: Could not mount static files: {e}")
 
 # Routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
@@ -51,3 +62,4 @@ app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
 app.include_router(settings_router.router, prefix="/api/v1/settings", tags=["Settings"])
 app.include_router(search.router, prefix="/api/v1/search", tags=["Search"])
+
