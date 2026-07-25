@@ -17,7 +17,7 @@ app = FastAPI(title=settings.APP_NAME, version="1.0.0")
 
 @app.get("/")
 def root():
-    return RedirectResponse(url="https://your-vercel-app.vercel.app") 
+    return RedirectResponse(url="https://pharmacy-system-lwr6.vercel.app") 
 
 
 @app.get("/api")
@@ -32,7 +32,7 @@ def health():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://your-vercel-app.vercel.app",
+        "https://pharmacy-system-lwr6.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
