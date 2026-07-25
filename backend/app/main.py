@@ -17,7 +17,7 @@ app = FastAPI(title=settings.APP_NAME, version="1.0.0")
 
 @app.get("/")
 def root():
-    return RedirectResponse(url="http://localhost:5173")
+    return RedirectResponse(url="https://your-vercel-app.vercel.app") 
 
 
 @app.get("/api")
@@ -29,15 +29,15 @@ def api_root():
 def health():
     return {"status": "success", "message": "API is running"}
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[
+        "https://your-vercel-app.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # Static files for uploads
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
