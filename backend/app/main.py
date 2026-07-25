@@ -1,12 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse  # 👈 Added RedirectResponse import
 
 from app.config import settings
 from app.database import engine, Base
 from app.api.v1 import auth, users, medicines, categories, suppliers, customers
 from app.api.v1 import sales, prescriptions, notifications
 from app.api.v1 import reports, dashboard, settings as settings_router, search
+
+# 🚨 DATABASE TABLES CREATE KARNE KE LIYE YAHAN ADD KIYA GAYA HAI 🚨
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title=settings.APP_NAME, version="1.0.0")
 

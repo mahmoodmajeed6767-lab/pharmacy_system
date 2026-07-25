@@ -12,7 +12,9 @@ import { DoughnutChart } from '../../components/dashboard/DoughnutChart';
 import { formatTpl } from '../../translations';
 
 const paymentBadge: Record<string, 'success' | 'warning' | 'danger'> = {
-  paid: 'success', pending: 'warning', refunded: 'danger',
+  paid: 'success', 
+  pending: 'warning', 
+  refunded: 'danger',
 };
 
 const ALL_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -26,10 +28,17 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    dashboardService.get().then((res) => {
-      setStats(res.data.data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    dashboardService.get()
+      .then((res) => {
+        // Safe data extraction: handle both res.data.data and res.data structures
+        const data = res?.data?.data !== undefined ? res.data.data : res?.data;
+        setStats(data || null);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Dashboard Service Error:", err);
+        setLoading(false);
+      });
   }, []);
 
   if (loading) return <LoadingSpinner size="lg" />;
@@ -37,16 +46,32 @@ export function Dashboard() {
 
   const saleColumns = [
     { key: 'invoice_number', header: t.dashboard.invoice },
-    { key: 'total', header: t.dashboard.total, render: (v: number) => <span className="font-medium">{formatPrice(v)}</span> },
-    { key: 'payment_method', header: t.dashboard.payment },
-    { key: 'payment_status', header: t.dashboard.status, render: (v: string) => <Badge variant={paymentBadge[v] || 'default'}>{v}</Badge> },
-    { key: 'created_at', header: t.dashboard.date, render: (v: string) => new Date(v).toLocaleDateString() },
+    { 
+      key: 'total', 
+      header: t.dashboard.total, 
+      render: (v: number, row: any) => (
+        <span className="font-medium">{formatPrice(v ?? row?.total_amount ?? 0)}</span>
+      ) 
+    },
+    { key: 'payment_method', header: t.dashboard.payment, render: (v: string) => v || 'Cash' },
+    { 
+      key: 'payment_status', 
+      header: t.dashboard.status, 
+      render: (v: string) => (
+        <Badge variant={paymentBadge[v?.toLowerCase()] || 'default'}>{v || 'paid'}</Badge>
+      ) 
+    },
+    { 
+      key: 'created_at', 
+      header: t.dashboard.date, 
+      render: (v: string) => (v ? new Date(v).toLocaleDateString() : 'N/A') 
+    },
   ];
 
-  const monthlyData = stats.monthly_sales_data || [];
+  const monthlyData = stats?.monthly_sales_data || [];
 
-  const catLabels = stats.category_distribution?.map((c: any) => c.name) || [];
-  const catValues = stats.category_distribution?.map((c: any) => c.count) || [];
+  const catLabels = stats?.category_distribution?.map((c: any) => c.name) || [];
+  const catValues = stats?.category_distribution?.map((c: any) => c.count) || [];
 
   const handleCategoryClick = (label: string) => {
     navigate(`/medicines?category=${encodeURIComponent(label)}`);
@@ -153,7 +178,10 @@ export function Dashboard() {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
           <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">{t.dashboard.todaysSummary}</h2>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3.5 rounded-lg bg-gradient-to-r from-[#1a5c7a]/5 to-transparent border border-[#1a5c7a]/10 cursor-pointer hover:from-[#1a5c7a]/10 transition-all" onClick={() => navigate('/dashboard/orders-today')}>
+            <div 
+              className="flex items-center justify-between p-3.5 rounded-lg bg-gradient-to-r from-[#1a5c7a]/5 to-transparent border border-[#1a5c7a]/10 cursor-pointer hover:from-[#1a5c7a]/10 transition-all" 
+              onClick={() => navigate('/dashboard/orders-today')}
+            >
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.totalOrders}</p>
                 <p className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">{stats.total_sales_today || 0}</p>
@@ -164,6 +192,7 @@ export function Dashboard() {
                 </svg>
               </div>
             </div>
+            
             <div className="flex items-center justify-between p-3.5 rounded-lg bg-gradient-to-r from-emerald-500/5 to-transparent border border-emerald-500/10">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.revenueToday}</p>
@@ -175,6 +204,7 @@ export function Dashboard() {
                 </svg>
               </div>
             </div>
+
             <div className="flex items-center justify-between p-3.5 rounded-lg bg-gradient-to-r from-purple-500/5 to-transparent border border-purple-500/10">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.monthlyRevenue}</p>
@@ -186,8 +216,12 @@ export function Dashboard() {
                 </svg>
               </div>
             </div>
-            {stats.expired_medicines > 0 && (
-              <div className="flex items-center justify-between p-3.5 rounded-lg bg-gradient-to-r from-red-500/5 to-transparent border border-red-500/10 cursor-pointer hover:from-red-500/10 transition-all" onClick={() => navigate('/dashboard/expired')}>
+
+            {stats?.expired_medicines > 0 && (
+              <div 
+                className="flex items-center justify-between p-3.5 rounded-lg bg-gradient-to-r from-red-500/5 to-transparent border border-red-500/10 cursor-pointer hover:from-red-500/10 transition-all" 
+                onClick={() => navigate('/dashboard/expired')}
+              >
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t.dashboard.expiredMedicines}</p>
                   <p className="text-xl font-bold text-red-600 dark:text-red-400 mt-0.5">{stats.expired_medicines}</p>

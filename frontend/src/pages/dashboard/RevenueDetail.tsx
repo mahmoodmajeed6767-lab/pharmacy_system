@@ -19,25 +19,60 @@ export function RevenueDetail() {
   const [view, setView] = useState<'chart' | 'history'>('chart');
 
   useEffect(() => {
-    Promise.all([
-      dashboardService.get(),
-      reportService.sales({ report_type: 'yearly' }),
-    ]).then(([dashRes, salesRes]) => {
-      setStats(dashRes.data.data);
-      setMonthlyHistory(salesRes.data.data || []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    async function fetchRevenueData() {
+      try {
+        // Promise.allSettled use kar rahe hain taake ek API fail hone par doosri stop na ho
+        const [dashRes, salesRes] = await Promise.allSettled([
+          dashboardService?.get ? dashboardService.get() : Promise.reject('No service'),
+          reportService?.sales ? reportService.sales({ report_type: 'yearly' }) : Promise.reject('No service'),
+        ]);
+
+        // 1. Process Dashboard Stats
+        if (dashRes.status === 'fulfilled' && dashRes.value) {
+          const resData = dashRes.value?.data;
+          setStats(resData?.data || resData || {});
+        } else {
+          // Default empty object if API fails
+          setStats({});
+        }
+
+        // 2. Process Yearly Sales History
+        if (salesRes.status === 'fulfilled' && salesRes.value) {
+          const historyData = salesRes.value?.data;
+          setMonthlyHistory(historyData?.data || historyData?.items || historyData || []);
+        } else {
+          setMonthlyHistory([]);
+        }
+
+      } catch (error) {
+        console.error("Error loading revenue details:", error);
+        setStats({});
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchRevenueData();
   }, []);
 
   if (loading) return <LoadingSpinner size="lg" />;
-  if (!stats) return <div className="text-center py-12 text-gray-500">Failed to load data</div>;
 
-  const monthlyData = stats.monthly_sales_data || [];
+  // Safe fallback data if stats is empty
+  const currentStats = stats || {};
+  const monthlyData = currentStats?.monthly_sales_data || Array(MONTHS.length).fill(0);
 
   const historyColumns = [
-    { key: 'date', header: 'Date', render: (v: string) => new Date(v + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) },
-    { key: 'count', header: 'Sales', render: (v: number) => v },
-    { key: 'revenue', header: 'Revenue', render: (v: number) => <span className="font-medium text-emerald-600">{formatPrice(v)}</span> },
+    { 
+      key: 'date', 
+      header: 'Date', 
+      render: (v: string) => v ? new Date(v + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '-' 
+    },
+    { key: 'count', header: 'Sales', render: (v: number) => v ?? 0 },
+    { 
+      key: 'revenue', 
+      header: 'Revenue', 
+      render: (v: number) => <span className="font-medium text-emerald-600">{formatPrice(v || 0)}</span> 
+    },
   ];
 
   return (
@@ -49,17 +84,28 @@ export function RevenueDetail() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/dashboard/orders-today')}>
+        <div 
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 cursor-pointer hover:shadow-md transition-shadow" 
+          onClick={() => navigate('/dashboard/orders-today')}
+        >
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Revenue Today</p>
-          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1.5">{formatPrice(stats.total_revenue_today || 0)}</p>
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1.5">
+            {formatPrice(currentStats?.total_revenue_today || currentStats?.revenue_today || 0)}
+          </p>
         </div>
+
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Monthly Revenue</p>
-          <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1.5">{formatPrice(stats.monthly_revenue || 0)}</p>
+          <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1.5">
+            {formatPrice(currentStats?.monthly_revenue || currentStats?.total_monthly_revenue || 0)}
+          </p>
         </div>
+
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Sales This Month</p>
-          <p className="text-2xl font-bold text-[#1a5c7a] mt-1.5">{stats.total_sales_this_month || 0}</p>
+          <p className="text-2xl font-bold text-[#1a5c7a] mt-1.5">
+            {currentStats?.total_sales_this_month || currentStats?.sales_this_month || 0}
+          </p>
         </div>
       </div>
 
@@ -86,3 +132,5 @@ export function RevenueDetail() {
     </div>
   );
 }
+
+export default RevenueDetail;
