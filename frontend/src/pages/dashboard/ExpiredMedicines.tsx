@@ -42,8 +42,8 @@ export function ExpiredMedicines() {
         let fetchedData: any[] = [];
         
         // 1. Try fetching from service
-        if (medicineService?.getAll) {
-          const res: any = await medicineService.getAll();
+        if (medicineService?.list) {
+          const res: any = await medicineService.list({ limit: 1000 });
           fetchedData = res?.data?.data || res?.data?.items || res?.data || [];
         }
 
