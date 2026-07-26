@@ -31,9 +31,7 @@ def health():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://pharmacy-system-lwr6.vercel.app",
-    ],
+    allow_origins=["*"],  # Allow all origins for development; adjust in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
