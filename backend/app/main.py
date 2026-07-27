@@ -17,7 +17,7 @@ app = FastAPI(title=settings.APP_NAME, version="1.0.0")
 
 @app.get("/")
 def root():
-    return RedirectResponse(url="https://pharmacy-system-lwr6.vercel.app") 
+    return RedirectResponse(url="https://pharmacy-system-ecru.vercel.app/") 
 
 
 @app.get("/api")
